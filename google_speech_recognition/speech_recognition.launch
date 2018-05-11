@@ -1,0 +1,5 @@
+<launch>
+  <include file="$(find audio_capture)/launch/capture_wave.launch" />
+  <node name="speech_recognition" pkg="google_speech_recognition" type="main.py" output="screen" />
+  <node name="speech_synthesis" pkg="google_speech_synthesis" type="main.py" output="screen" />
+</launch>

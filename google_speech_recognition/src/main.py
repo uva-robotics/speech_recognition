@@ -5,15 +5,17 @@ from std_msgs.msg import String
 
 import speech_recognition as sr
 from audio_common_msgs.msg import AudioData
+from naoqi_bridge_msgs.msg import AudioBuffer
 
-from pyaudio import PyAudio, paInt16
+from pyaudio import PyAudio, paInt16, paInt8, paUInt8
 import pyaudio
 import audioop
-import sounddevice as sd
 import numpy as np
 import librosa
 import collections
 import time
+
+import alsaaudio
 
 from threading import Thread
 from Queue import Queue, Empty
@@ -34,6 +36,7 @@ class Recognizer(Thread):
 
     def __init__(self, queue):
         super(Recognizer, self).__init__()
+        self.daemon = True
         self.queue = queue
         self.recognizer = sr.Recognizer()
         self.publisher = rospy.Publisher('speech_synthesis', String, queue_size=10)
@@ -79,12 +82,12 @@ class AudioDetector():
 
         self.stream = self.pa.open(format = paInt16,
                          channels = 1,
-                         rate = 16000,
+                         rate = self.SAMPLE_RATE,
                          output = True,
-                         frames_per_buffer = 512)
+                         frames_per_buffer = 2048)
 
         self.frames = ""
-        self.ringBuffer = RingBuffer(10 * 16000)
+        self.ringBuffer = RingBuffer(10 * self.SAMPLE_RATE)
         self.speechBuffer = ""
         self.counter = 0
         self.is_talking = False
@@ -99,13 +102,7 @@ class AudioDetector():
         return sr.AudioData(raw_data, self.SAMPLE_RATE, self.SAMPLE_WIDTH)
 
     def callback(self, data):
-
-        # print(len(''.join(data.AudioData)))
         if data._type == 'audio_common_msgs/AudioData':
-            # self.file_handle.write(data.data)
-            self.stream.write(data.data)
-
-            # audio_data = np.fromstring(data.data, dtype=np.int16)
             rms = audioop.rms(data.data, 2)
 
             self.speechBuffer += data.data
@@ -114,11 +111,10 @@ class AudioDetector():
                 self.counter = 0
             if rms < 500 and self.counter > 150:
                 self.is_talking = False
-                # print("RESET TALKING")
 
             print(len(self.speechBuffer))
             self.counter += 1
-            # print(self.counter, rms)
+
             if self.counter > 250 and not self.is_talking:
                 audio_data = self._create_audio_data(self.speechBuffer)
                 self.queue.put(audio_data)
@@ -128,13 +124,10 @@ class AudioDetector():
                 self.counter = 0
                 self.is_talking = False
 
-
-
-
-
     def audio_listener(self):
+        print("LISTENING")
         rospy.init_node('listener', anonymous=True)
-        rospy.Subscriber("/audio/audio", AudioData, self.callback)
+        rospy.Subscriber("/audio", AudioData, self.callback)
         rospy.spin()
 
 if __name__ == '__main__':
