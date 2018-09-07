@@ -9,20 +9,18 @@
 ## v0.1.0 (alpha):                              ##
 ##  + Begun development                         ##
 ##  + Created package                           ##
-##  + Added way to connect to Pepper audio      ##
+##  + Added initial test of ALSpeechRecognition ##
+##################################################
+## v0.2.0 (alpha):                              ##
+##  + Added pocketsphinx                        ##
 ##################################################
 
 import ros
 import argparse
 import naoqi
+import time
 
-__VERSION = "0.1.0"
-
-# Class for recognising speech
-class SpeechRecogniserALSpeech ():
-    def __init__():
-        pass
-
+__VERSION = "0.2.0"
 
 # Main
 def main (pepper_ip):
@@ -37,6 +35,10 @@ def main (pepper_ip):
 
     print("Setting up speech recogniser...")
     asr = naoqi.ALProxy("ALSpeechRecognition", pepper_ip, 9559)
+    asr.setVocabulary(["hello", "world"], False)
+    asr.subscribe("Test_ASR")
+    time.sleep(20)
+    asr.unsubscribe("Test_ASR")
 
 # Entry point
 if __name__ == '__main__':
