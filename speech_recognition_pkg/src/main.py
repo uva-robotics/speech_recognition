@@ -25,10 +25,15 @@
 ##  - Removed recording of files (since we can  ##
 ##    directly access the mic)                  ##
 ##################################################
+## v0.4.0 (alpha):                              ##
+##  + Added keyword triggering to record a file ##
+##    of 10 seconds upon saying 'Pepper'        ##
+##################################################
 
-import ros
-import argparse
 import naoqi
+import rospy
+from std_msgs.msg import String
+import argparse
 import time
 import speech_recognition as sr
 from array import array
@@ -37,6 +42,44 @@ import pyaudio
 import wave
 
 __VERSION = "0.3.0"
+
+# Recogniser class
+class SpeechRecogniser (naoqi.ALModule):
+    def __init__(self, pepper_ip):
+        self.setName("SpeechRecogniser")
+        self.publisher = rospy.Publisher("/speech", String, queue_size=10)
+        self.memory = naoqi.ALProxy("ALMemory", pepper_ip, 9559)
+        self.memory.subscribeToEvent("WordRecognized",
+            "SpeechRecogniser",
+            "speechCallBack")
+        self.proxy = naoqi.ALProxy("ALSpeechRecognition", pepper_ip, 9559)
+        #self.proxy.setVocabulary(["Pepper"], False)
+        self.recogniser = sr.Recognizer()
+        self.log("Initialized")
+
+    def start (self):
+        self.proxy.subscribe("Speech_Recognition_Service")
+        self.log("Started")
+
+    def stop (self):
+        self.proxy.unsubscribe("Speech_Recognition_Service")
+        self.log("Stopped")
+
+
+    def speechCallback(eventName, value, subscriberID):
+        self.publisher.publish("Yes?")
+        self.log("Triggered, listening for audio...")
+        # Collect audio file for ten seconds
+        time.sleep(5)
+        # Done
+        self.publisher.publish("Thinking")
+        self.log("Got audio, processing...")
+        result = "To Be done"#self.recogniser.recognize_sphinx(audio)
+        self.publisher.publish("You said {}".format(result))
+        self.log("Result: " + result)
+
+    def log (self, text):
+        print("{} > {}".format(self.name, text))
 
 # Main
 def main (mode, pepper_ip):
@@ -73,6 +116,23 @@ def main (mode, pepper_ip):
             print("Sphinx error; {0}".format(e))
 
         print("Done")
+
+    # Init ros node
+    rospy.init_node("SpeechRecogniser")
+
+    # Load the class
+    recogniser = SpeechRecogniser(pepper_ip)
+    # Start
+    recogniser.start()
+    start = time.time()
+    while True:
+        try:
+            if time.time() - start >= 30:
+                break
+        except KeyboardInterrupt:
+            break
+    recogniser.stop()
+    print("Done")
 
 
 # Entry point
