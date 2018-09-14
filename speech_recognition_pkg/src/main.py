@@ -38,7 +38,7 @@ import time
 import speech_recognition as sr
 from array import array
 from struct import pack
-import pyaudio
+# import pyaudio
 import wave
 
 __VERSION = "0.3.0"
@@ -95,7 +95,7 @@ def main (mode, pepper_ip):
 
     if mode == "TEST":
         PATH = "/home/lut_99/Desktop/test.wav"
-        FORMAT = pyaudio.paInt16
+        # FORMAT = pyaudio.paInt16
         FRAMERATE = 44100
         CHUNK_SIZE = 1024
 
