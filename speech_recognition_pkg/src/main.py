@@ -19,18 +19,24 @@
 ##    PyAudio                                   ##
 ##  - Removed test of ALSpeechRecognition       ##
 ##################################################
+## v0.3.0 (alpha):                              ##
+##  + Added recognising of speech using         ##
+##    speech_recognition                        ##
+##  - Removed recording of files (since we can  ##
+##    directly access the mic)                  ##
+##################################################
 
 import ros
 import argparse
 import naoqi
 import time
-#import SpeechRecognition
+import speech_recognition as sr
 from array import array
 from struct import pack
 import pyaudio
 import wave
 
-__VERSION = "0.2.0"
+__VERSION = "0.3.0"
 
 # Main
 def main (mode, pepper_ip):
@@ -49,31 +55,22 @@ def main (mode, pepper_ip):
         FORMAT = pyaudio.paInt16
         FRAMERATE = 44100
         CHUNK_SIZE = 1024
-        # Get a sample of speech
-        print("First, we need a sample of speech.\nPress Enter to begin recording..."),
-        raw_input()
-        # Start the recording
-        p = pyaudio.PyAudio()
-        stream = p.open(format=FORMAT,channels=1,rate=FRAMERATE,input=True,output=False,frames_per_buffer=CHUNK_SIZE)
-        start = time.time()
-        data = []
-        # Record for 5 seconds
-        while time.time() - start <= 5:
-            data.extend(array('h', stream.read(CHUNK_SIZE)))
-        sample_width = p.get_sample_size(FORMAT)
-        stream.stop_stream()
-        stream.close()
-        p.terminate()
-        print("Done\nWriting to '"+PATH+"'..."),
 
-        # Now that we have the data, write it to a .WAV
-        data = pack('<' + ('h'*len(data)), *data)
-        wf = wave.open(PATH, 'wb')
-        wf.setnchannels(1)
-        wf.setsampwidth(sample_width)
-        wf.setframerate(FRAMERATE)
-        wf.writeframes(data)
-        wf.close()
+        # obtain audio from the microphone
+        r = sr.Recognizer()
+        with sr.Microphone() as source:
+            print("Say something!")
+            audio = r.listen(source)
+
+        print("Done, recognising...")
+
+        # recognize speech using Sphinx
+        try:
+            print("Sphinx thinks you said " + r.recognize_sphinx(audio))
+        except sr.UnknownValueError:
+            print("Sphinx could not understand audio")
+        except sr.RequestError as e:
+            print("Sphinx error; {0}".format(e))
 
         print("Done")
 
