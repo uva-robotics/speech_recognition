@@ -1,21 +1,24 @@
-import rospy
+# import rospy
 import dialogflow_v2 as dialogflow
-from std_msgs.msg import String
+# from std_msgs.msg import String
+
+from gtts import gTTS
+import os
+
 
 class DialogFlow():
 
     def __init__(self):
-        rospy.init_node('dialogflow', anonymous=True)
-        rospy.Subscriber("/recognized_audio", String, self.callback)        
-        self.session_id = 'abcd'
+        # rospy.init_node('dialogflow', anonymous=True)
+        # rospy.Subscriber("/recognized_audio", String, self.callback)        
+        self.session_id = 'abc'
+        texts = ['What is your name?']
+        self.detect_intent_texts('pepper-39819', self.session_id, texts, 'en')
         
     def callback(self, msg):
         print(msg)
-        texts = ['What is your name']
-        self.detect_intent_texts('pepper-836c4', self.session_id, texts, 'en')
-
-            
-    def detect_intent_texts(project_id, session_id, texts, language_code):
+        
+    def detect_intent_texts(self, project_id, session_id, texts, language_code):
         """Returns the result of detect intent with texts as inputs.
 
         Using the same `session_id` between requests allows continuation
@@ -35,7 +38,6 @@ class DialogFlow():
             response = session_client.detect_intent(
                 session=session, query_input=query_input)
 
-            print('=' * 20)
             print('Query text: {}'.format(response.query_result.query_text))
             print('Detected intent: {} (confidence: {})\n'.format(
                 response.query_result.intent.display_name,
@@ -43,6 +45,11 @@ class DialogFlow():
             print('Fulfillment text: {}\n'.format(
                 response.query_result.fulfillment_text))
 
+            fp = "/tmp/tmp.mp3"
+            tts = gTTS(text=response.query_result.fulfillment_text, lang='en')
+            tts.save(fp)
+            os.system("play " + fp)
+
 if __name__ == '__main__':
     dialogflow = DialogFlow()
-    rospy.spin()
+    # rospy.spin()
