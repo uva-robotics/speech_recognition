@@ -254,6 +254,7 @@ if __name__ == '__main__':
                 sensitivities=sensitivities,
                 output_path=args.output_path,
                 input_device_index=args.input_audio_device_index)
+        p.show_audio_devices_info()
         # p.run()
         rospy.spin()
     except KeyboardInterrupt:
