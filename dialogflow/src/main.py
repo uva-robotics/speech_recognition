@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import rospy
 import dialogflow_v2 as dialogflow
 from std_msgs.msg import String
