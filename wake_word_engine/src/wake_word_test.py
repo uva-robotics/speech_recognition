@@ -34,8 +34,10 @@ import pyaudio
 import sounddevice as sd
 
 
-PRECISE_DIR = './src/speech_recognition/wake_word_engine/mycroft-precise/'
+# PRECISE_DIR = rospy.get_param('~engine')
+PRECISE_DIR = '/home/spijkervet/git/uva-robotics/main/src/vendor/src/mycroft-precise'
 sys.path.append(os.path.join(PRECISE_DIR, "runner"))
+
 from precise_runner import PreciseRunner, PreciseEngine
 from threading import Event
 
@@ -61,28 +63,30 @@ stream = p.open(format=pyaudio.paInt16,
 
 class WakeWord():
 
-    def __init__(self):
+    def __init__(self, model):
         self.wake_word = rospy.Publisher(WAKE_WORD_TOPIC, Bool, queue_size=10)
          
         # self.audio = rospy.Subscriber(CONVERTED_AUDIO_TOPIC, Float32MultiArray, self.audio_cb)
 
-        # very low for now!
-        probability = 0.05
-
         engine = PreciseEngine(os.path.join(PRECISE_DIR, '.venv/bin/precise-engine'), 
-            os.path.join(PRECISE_DIR,'./pepper.pb'), 
-            chunk_size=1024)
+            model,
+            chunk_size=1024
+        )
+
         # stream = binary 16 bit mono!
-        PreciseRunner(engine, stream=stream, on_prediction=self.on_prediction, on_activation=self.on_activation,
-                    trigger_level=3, sensitivity=0.999).start()
+        PreciseRunner(engine, stream=stream, on_prediction=self.on_prediction, 
+            on_activation=self.on_activation,
+            trigger_level=3, sensitivity=0.999
+        ).start()
         # Event().wait()
 
     def on_prediction(self, prob):
-        probability = 0.01
-        if prob > probability:
-            print'!',
-        else:
-            print'.',
+        pass
+        # probability = 0.01
+        # if prob > probability:
+        #     print'!',
+        # else:
+        #     print'.',
     
 
     def on_activation(self):
@@ -126,10 +130,9 @@ class WakeWord():
             led.publish(led_msg)
         
  
-        
-
 if __name__ == '__main__':
     rospy.init_node('wake_word')
     led = rospy.Publisher(LED_TOPIC, FadeRGB, queue_size=10)
-    wake_word = WakeWord()
+    model = rospy.get_param('~wake_word_model')
+    wake_word = WakeWord(model)
     rospy.spin()

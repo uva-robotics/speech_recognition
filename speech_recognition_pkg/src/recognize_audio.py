@@ -55,6 +55,7 @@ class AudioRecognizer():
         return dataBuff
 
     def audio_cb(self, data):
+        #TODO: end-of-utterance/end-of-query detection
         audiodata = np.asarray(data.data)
         if self.wake_word_activated:
             print("*** LISTENING AFTER WAKE WORD *** (RMS {})".format(self.calc_rms(audiodata)))
