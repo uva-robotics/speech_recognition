@@ -14,6 +14,8 @@ from std_msgs.msg import Float32MultiArray
 from std_msgs.msg import ColorRGBA
 from naoqi_bridge_msgs.msg import FadeRGB
 
+import webrtcvad
+
 WAKE_WORD_TOPIC = '/wake_word'
 CONVERTED_AUDIO_TOPIC = '/converted_audio'
 RECOGNIZED_INTENT = '/recognized_intent'
@@ -33,8 +35,14 @@ class AudioRecognizer():
         self.sample_rate = 16000
         self.channels = 1
         self.wake_word_activated = False
-        self.buffer_size = 512.25
+        self.is_listening = False
+        self.buffer_size = 512
 
+        self.CHUNK_SIZE = 30 # 30 ms for VAD
+        self.vad_ring_buffer = collections.deque(maxlen=self.CHUNK_SIZE)
+        self.vad_active = False
+        self.speak_state = []
+        
         self.pause_ms = 4000
 
         self.recognized_intent = rospy.Publisher(RECOGNIZED_INTENT, String, queue_size=10)
@@ -73,14 +81,55 @@ class AudioRecognizer():
         led_msg.fade_duration = d
         led.publish(led_msg)
 
+    def end_of_line_detection(self):
+        return self.speak_state.count(False) >= 2
+           
     def audio_cb(self, data):
         #TODO: end-of-utterance/end-of-query detection
-        audiodata = np.asarray(data.data)
-        if self.wake_word_activated:
-            print("*** LISTENING AFTER WAKE WORD *** (RMS {})".format(self.calc_rms(audiodata)))
-            self.buffer.append(audiodata)
-            if len(self.buffer) > self.pause_ms / self.buffer_size:
+        
+        # RATE = 16000
+        # CHUNK_DURATION_MS = 30
+        # CHUNK_SIZE = int(RATE * CHUNK_DURATION_MS / 1000)
+        # CHUNK_BYTES = CHUNK_SIZE * 2
 
+        # active = vad.is_speech(chunk, RATE)
+
+        audiodata = np.asarray(data.data)
+
+        CHUNK_SIZE = int(self.sample_rate * 30 / 1000.)
+
+        vad_buffer = []
+        for i, a in enumerate(audiodata):
+            if i == 0:
+                vad_buffer.append(a)
+            elif i % CHUNK_SIZE == 0:
+                if len(vad_buffer) == CHUNK_SIZE-1:
+                    vad_buffer.append(0)
+                aud = np.asarray(vad_buffer, dtype=np.int16)
+                pcm = self.convert_to_audiodata(aud)
+                self.vad_active = vad.is_speech(pcm, self.sample_rate)
+                vad_buffer = []
+            else:
+                vad_buffer.append(a)
+
+        # 512 ms aan samples ===> 30 ms aan samples
+        # self.vad_ring_buffer.extend(pcm)
+
+        if self.wake_word_activated:
+            self.is_listening = True
+            self.wake_word_activated = False
+            rospy.set_param('/speech_recognition/is_listening', True)
+        elif self.is_listening is True:
+
+            print("*** LISTENING AFTER WAKE WORD *** (RMS {})".format(self.calc_rms(audiodata)))
+            if self.vad_active:
+                print("*** VAD *** ", self.vad_active)
+                self.speak_state.append(True)
+                self.buffer.append(audiodata)
+            elif self.speak_state.count(True) >= 2:
+                self.speak_state.append(False)
+            
+            if self.end_of_line_detection(): # or (len(self.buffer) > self.pause_ms / self.buffer_size):
 
                 self.set_leds()
 
@@ -94,6 +143,7 @@ class AudioRecognizer():
                 # soundfile.write('/home/test.wav', recorded_audio, samplerate=self.sample_rate*self.channels, subtype='PCM_16')
 
                 if audio_data:
+                    self.is_listening = False
                     self.wake_word_activated = False
                     text = ''
                     try:
@@ -108,11 +158,15 @@ class AudioRecognizer():
                         print("Oops! Didn't catch that")
                 self.recognized_intent.publish(String(text))
                 self.buffer = []
+                self.speak_state = []
+                self.vad_active = False
+                rospy.set_param('/speech_recognition/is_listening', False)
                     
                 
 
 
 if __name__ == '__main__':
+    vad = webrtcvad.Vad()
     led = rospy.Publisher(LED_TOPIC, FadeRGB, queue_size=10)
     ar = AudioRecognizer()
     rospy.spin()
