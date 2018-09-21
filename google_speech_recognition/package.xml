@@ -2,9 +2,9 @@
 <package>
   <name>google_speech_recognition</name>
   <version>0.0.0</version>
-  <description>The google_speech_recognition package</description>
+  <description>A package for speech recognition</description>
 
-  <maintainer email="janne.spijkervet@hotmail.com">Janne Spijkervet</maintainer>
+  <maintainer email="mullertim99@gmail.com">Tim Müller</maintainer>
 
   <license>TODO</license>
 
@@ -14,6 +14,5 @@
 
   <run_depend>rospy</run_depend>
   <run_depend>python-six</run_depend>
-  <run_depend>python-speechrecognition</run_depend>
   <!-- <run_depend>python-tensorflow-pip</run_depend> -->
 </package>

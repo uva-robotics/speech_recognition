@@ -1,3 +1,0 @@
-# Speech Recognition
-
-## WIP
