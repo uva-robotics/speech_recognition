@@ -76,58 +76,52 @@ class WakeWord():
         # stream = binary 16 bit mono!
         PreciseRunner(engine, stream=stream, on_prediction=self.on_prediction, 
             on_activation=self.on_activation,
-            trigger_level=3, sensitivity=0.999
+            trigger_level=3, sensitivity=0.9
         ).start()
         # Event().wait()
 
     def on_prediction(self, prob):
         pass
-        # probability = 0.01
-        # if prob > probability:
-        #     print'!',
-        # else:
-        #     print'.',
     
 
     def on_activation(self):
         self.wake_word.publish(Bool(True))
         color = ColorRGBA()
-        color.r = random.randint(0,255)
-        color.g = random.randint(0,255)
-        color.b = random.randint(0,255)
+        color.r = 0
+        color.g = 255
+        color.b = 0
         color.a = 0.0
 
-        for i in range(0, 8):
-            d = rospy.Duration.from_sec(0.1)
-            led_msg = FadeRGB()
-            led_msg.led_name = 'FaceLedRight' + str(i)
-            led_msg.color = color
-            led_msg.fade_duration = d
-            led.publish(led_msg)
-            
-        for i in range(0, 8):
-            d = rospy.Duration.from_sec(0.1)
-            led_msg = FadeRGB()
-            led_msg.led_name = 'FaceLedLeft' + str(i)
-            led_msg.color = color
-            led_msg.fade_duration = d
-            led.publish(led_msg)
+        d = rospy.Duration.from_sec(0.0)
 
-        for i in range(1, 11):
-            d = rospy.Duration.from_sec(0.1)
-            led_msg = FadeRGB()
-            led_msg.led_name = 'RightEarLed' + str(i)
-            led_msg.color = color
-            led_msg.fade_duration = d
-            led.publish(led_msg)
-            
-        for i in range(1, 11):
-            d = rospy.Duration.from_sec(0.1)
-            led_msg = FadeRGB()
-            led_msg.led_name = 'LeftEarLed' + str(i)
-            led_msg.color = color
-            led_msg.fade_duration = d
-            led.publish(led_msg)
+        led_msg = FadeRGB()
+        led_msg.led_name = 'FaceLeds'
+        led_msg.color = color
+        led_msg.fade_duration = d
+        led.publish(led_msg)
+
+        # SLEEP
+        time.sleep(1)
+
+        color = ColorRGBA()
+        color.r = 0
+        color.g = 0
+        color.b = 255
+        color.a = 0.0
+        d = rospy.Duration.from_sec(0)
+
+        led_msg = FadeRGB()
+        led_msg.led_name = 'FaceLeds'
+        led_msg.color = color
+        led_msg.fade_duration = d
+        led.publish(led_msg)
+
+        led_msg = FadeRGB()
+        led_msg.led_name = 'EarLeds'
+        led_msg.color = color
+        led_msg.fade_duration = d
+        led.publish(led_msg)
+       
         
  
 if __name__ == '__main__':

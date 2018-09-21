@@ -3,12 +3,17 @@ import rospy
 import dialogflow_v2 as dialogflow
 from std_msgs.msg import String
 
+from std_msgs.msg import ColorRGBA
+from naoqi_bridge_msgs.msg import FadeRGB
+
 from gtts import gTTS
 import os
 
 
 RECOGNIZED_INTENT = '/recognized_intent'
 SPEAK_TOPIC = '/speech'
+LED_TOPIC = '/fade_rgb'
+
 
 speech = rospy.Publisher(SPEAK_TOPIC, String, queue_size=10)
 
@@ -47,18 +52,40 @@ def detect_intent_texts(project_id, session_id, texts, language_code):
         # tts.save(fp)
         # os.system("play " + fp)
 
-class DialogFlow():
+
+class Intent():
 
     def __init__(self):
-        rospy.init_node('dialogflow', anonymous=True)
+        rospy.init_node('intent', anonymous=True)
         rospy.Subscriber(RECOGNIZED_INTENT, String, self.callback)        
 
     def callback(self, msg):
-        print(msg)
-        texts = [msg.data]
-        detect_intent_texts('pepper-39819', 'abc', texts, 'en')
+
+        if msg.data:
+            texts = [msg.data]
+            detect_intent_texts('pepper-39819', 'abc', texts, 'en')
+
+        led_msg = FadeRGB()
+        color = ColorRGBA()
+        color.r = 0
+        color.g = 0
+        color.b = 0
+        color.a = 0
+        d = rospy.Duration.from_sec(0)
+        led_msg = FadeRGB()
+        led_msg.led_name = 'FaceLeds'
+        led_msg.color = color
+        led_msg.fade_duration = d
+        led.publish(led_msg)
+
+        led_msg = FadeRGB()
+        led_msg.led_name = 'EarLeds'
+        led_msg.color = color
+        led_msg.fade_duration = d
+        led.publish(led_msg)
 
 
 if __name__ == '__main__':
-    d = DialogFlow()
+    led = rospy.Publisher(LED_TOPIC, FadeRGB, queue_size=10)
+    i = Intent()
     rospy.spin()
