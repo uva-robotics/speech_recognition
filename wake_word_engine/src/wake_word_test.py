@@ -106,7 +106,7 @@ class WakeWord():
         return dataBuff
 
     def on_prediction(self, prob):
-        print(prob)
+        # print(prob)
         pass
     
     def on_activation(self):

@@ -41,7 +41,7 @@ class SampleCollection():
         if not self.recording and len(self.record_buffer) > 0:
             print("*** WRITING TO FILE ***")
             recorded_audio = np.concatenate(self.record_buffer, axis=0).astype(np.int16)
-            soundfile.write(self.wav_path(), recorded_audio, samplerate=self.sample_rate*self.channels, subtype='PCM_16')        
+            soundfile.write(self.wav_path(), recorded_audio, samplerate=self.sample_rate, subtype='PCM_16')        
             self.record_buffer = []
 
 if __name__ == '__main__':

@@ -82,7 +82,7 @@ class AudioRecognizer():
         led.publish(led_msg)
 
     def end_of_line_detection(self):
-        return self.speak_state.count(False) >= 2
+        return self.speak_state.count(False) >= 1
            
     def audio_cb(self, data):
         #TODO: end-of-utterance/end-of-query detection
